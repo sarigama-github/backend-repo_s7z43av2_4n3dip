@@ -1,48 +1,97 @@
 """
-Database Schemas
+Dgardn Database Schemas
 
-Define your MongoDB collection schemas here using Pydantic models.
-These schemas are used for data validation in your application.
+Each Pydantic model represents a collection in MongoDB.
+Collection name is the lowercase of the class name.
 
-Each Pydantic model represents a collection in your database.
-Model name is converted to lowercase for the collection name:
-- User -> "user" collection
-- Product -> "product" collection
-- BlogPost -> "blogs" collection
+Examples:
+- User -> "user"
+- Organization -> "organization"
+
+These schemas are used for validation in API routes.
 """
+from typing import List, Optional, Literal
+from pydantic import BaseModel, Field, HttpUrl
+from datetime import datetime
 
-from pydantic import BaseModel, Field
-from typing import Optional
-
-# Example schemas (replace with your own):
-
+# Accounts
 class User(BaseModel):
-    """
-    Users collection schema
-    Collection name: "user" (lowercase of class name)
-    """
-    name: str = Field(..., description="Full name")
     email: str = Field(..., description="Email address")
-    address: str = Field(..., description="Address")
-    age: Optional[int] = Field(None, ge=0, le=120, description="Age in years")
-    is_active: bool = Field(True, description="Whether user is active")
+    name: str = Field(..., description="Full name")
+    account_type: Literal['user','organization'] = Field('user')
+    avatar_url: Optional[HttpUrl] = None
+    bio: Optional[str] = None
 
-class Product(BaseModel):
-    """
-    Products collection schema
-    Collection name: "product" (lowercase of class name)
-    """
-    title: str = Field(..., description="Product title")
-    description: Optional[str] = Field(None, description="Product description")
-    price: float = Field(..., ge=0, description="Price in dollars")
-    category: str = Field(..., description="Product category")
-    in_stock: bool = Field(True, description="Whether product is in stock")
+class Organization(BaseModel):
+    owner_user_id: str = Field(..., description="Owner user id")
+    name: str
+    description: Optional[str] = None
+    category: Optional[str] = None
+    location: Optional[str] = None
+    logo_url: Optional[HttpUrl] = None
+    cover_url: Optional[HttpUrl] = None
+    subscription_price: float = Field(0, ge=0)
 
-# Add your own schemas here:
-# --------------------------------------------------
+class TeamMembership(BaseModel):
+    user_id: str
+    organization_id: str
+    role: Literal['owner','admin','member'] = 'member'
 
-# Note: The Flames database viewer will automatically:
-# 1. Read these schemas from GET /schema endpoint
-# 2. Use them for document validation when creating/editing
-# 3. Handle all database operations (CRUD) directly
-# 4. You don't need to create any database endpoints!
+class Subscription(BaseModel):
+    user_id: str
+    organization_id: str
+    status: Literal['active','canceled','past_due'] = 'active'
+    started_at: Optional[datetime] = None
+
+# Content
+class Post(BaseModel):
+    organization_id: str
+    title: str
+    description: Optional[str] = None
+    image_url: Optional[HttpUrl] = None
+    category: Optional[str] = None
+    published_at: Optional[datetime] = None
+
+class Course(BaseModel):
+    organization_id: str
+    title: str
+    description: Optional[str] = None
+    thumbnail_url: Optional[HttpUrl] = None
+    price: float = Field(0, ge=0)
+    difficulty: Optional[Literal['beginner','intermediate','advanced']] = None
+    duration_hours: Optional[int] = Field(None, ge=0)
+    category: Optional[str] = None
+
+class Event(BaseModel):
+    organization_id: str
+    title: str
+    description: Optional[str] = None
+    image_url: Optional[HttpUrl] = None
+    date: Optional[datetime] = None
+    time: Optional[str] = None
+    location: Optional[str] = None
+    price: float = Field(0, ge=0)
+    online: bool = True
+    capacity: Optional[int] = Field(None, ge=0)
+
+class Job(BaseModel):
+    organization_id: str
+    title: str
+    description: Optional[str] = None
+    type: Literal['full-time','part-time','internship','freelance'] = 'full-time'
+    location: Optional[str] = None
+    remote: Optional[Literal['remote','on-site','hybrid']] = 'remote'
+    salary_min: Optional[int] = Field(None, ge=0)
+    salary_max: Optional[int] = Field(None, ge=0)
+
+class Message(BaseModel):
+    organization_id: str
+    user_id: str
+    content: str
+    thread_id: Optional[str] = None
+
+# Simple saved/bookmark items
+class SavedItem(BaseModel):
+    user_id: str
+    item_id: str
+    item_type: Literal['post','course','event','job']
